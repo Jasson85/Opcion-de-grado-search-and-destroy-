@@ -1,5 +1,6 @@
 import express from "express";
 import bcrypt from "bcryptjs";
+import axios from "axios";
 import db from "../db.js";
 
 const router = express.Router();
@@ -164,6 +165,64 @@ router.get('/listar', (req, res) => {
       return res.status(500).json({ message: 'Error al obtener usuarios' });
     }
     res.status(200).json({ usuarios: results });
+  });
+});
+
+// Encender dispositivo, Consultar estado
+router.get('/dispositivo/estado/:id', (req, res) => {
+  const { id } = req.params;
+  db.query("SELECT ip FROM dispositivos WHERE id = ?", [id], async (err, results) => {
+    if (err) return res.status(500).json({ estado: "error", message: "Error en el servidor" });
+    if (results.length === 0) return res.status(404).json({ estado: "desconocido", message: "Dispositivo no encontrado" });
+
+    const ip = results[0].ip;
+    try {
+      const response = await axios.get(`http://${ip}/status`);
+      const body = response.data || "";
+      // detectamos ON/ OFF según respuesta del ESP32
+      const estado = (typeof body === 'string' && body.includes("ON")) ? "encendido" : "apagado";
+      // devolvemos estado en una propiedad 'estado' para que el frontend lo consuma directamente
+      res.status(200).json({ estado });
+    } catch (error) {
+      console.error("Error al conectar con el dispositivo:", error.message || error);
+      res.status(500).json({ estado: "error", message: "Error al conectar con el dispositivo" });
+    }
+  });
+});
+
+
+// Apagar dispositivo
+router.get('/dispositivo/apagar/:id', (req, res) => {
+  const { id } = req.params;
+  db.query("SELECT ip FROM dispositivos WHERE id = ?", [id], async (err, results) => {
+    if (err) return res.status(500).json({ estado: "error", message: "Error en el servidor" });
+    if (results.length === 0) return res.status(404).json({ estado: "desconocido", message: "Dispositivo no encontrado" });
+
+    const ip = results[0].ip;
+    try {
+      const response = await axios.get(`http://${ip}/off`);
+      res.status(200).json({ estado: "apagado", mensaje: response.data });
+    } catch (error) {
+      res.status(500).json({  estado: "error", message: "No se pudo conectar con el dispositivo" });
+    }
+  });
+});
+
+// Consultar estado
+router.get('/dispositivo/estado/:id', (req, res) => {
+  const { id } = req.params;
+  db.query("SELECT ip FROM dispositivos WHERE id = ?", [id], async (err, results) => {
+    if (err) return res.status(500).json({ estado: "error", message: "Error en el servidor" });
+    if (results.length === 0) return res.status(404).json({ estado: "desconocido", message: "Dispositivo no encontrado" });
+
+    const ip = results[0].ip;
+    try {
+      const response = await axios.get(`http://${ip}/status`);
+      const estado = response.data.includes("ON") ? "encendido" : "apagado";
+      res.status(200).json({ message: response.data });
+    } catch (error) {
+      res.status(500).json({ estado: "error", message: "Error al conectar con el dispositivo" });
+    }
   });
 });
 

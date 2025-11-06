@@ -135,7 +135,7 @@ const Contacto = () => {
       return;
     }
 
-    const numeroWhatsApp = "573001234567"; // Reemplaza con tu número real
+    const numeroWhatsApp = "573196816535"; // Reemplaza con tu número real
     const texto = `Hola, soy ${nombre} (${correo}).\n\n${mensaje}`;
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(
       texto
