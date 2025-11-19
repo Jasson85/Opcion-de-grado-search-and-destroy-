@@ -6,35 +6,39 @@ const BotonEncendido = ({ dispositivo, onEstadoActualizado }) => {
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState("");
 
-  // 🔹 Al cargar o cuando cambie el dispositivo, consultar su estado actual
-    useEffect(() => {
+  const userToken = localStorage.getItem("userToken");
+  const config = {
+    headers: {
+      Authorization: `Bearer ${userToken}`
+    }
+  };
+
+  useEffect(() => {
     if (dispositivo && dispositivo.estado) setEstado(dispositivo.estado);
   }, [dispositivo]);
 
-   const toggleDispositivo = async () => {
+  const toggleDispositivo = async () => {
     setCargando(true);
     try {
-      const accion = estado === "encendido" ? "apagar" : "encender";
+      const accion = estado === "encendido" ? "apagar" : "descargar";
       const url = `http://localhost:8080/api/dispositivos/${accion}/${dispositivo.id}`;
 
-      const respuesta = await axios.get(url);
+      const respuesta = await axios.get(url, config);
 
-      // Priorizar estado devuelto por backend, si lo devuelve:
       const nuevoEstado = respuesta.data?.estado
         ? respuesta.data.estado
-        : accion === "encender"
-        ? "encendido"
+        : accion === "descargar"
+        ? "apagado"
         : "apagado";
 
       setEstado(nuevoEstado);
 
-      setMensaje(`💡 Dispositivo ${dispositivo.nombre || dispositivo.id} ${nuevoEstado}`);
+      setMensaje(`Dispositivo ${dispositivo.nombre || dispositivo.id} ${nuevoEstado}`);
 
-      // avisar al padre para que actualice su lista
       if (onEstadoActualizado) onEstadoActualizado(dispositivo.id, nuevoEstado);
     } catch (error) {
       console.error("Error al cambiar el estado del dispositivo:", error);
-      setMensaje("❌ No se pudo cambiar el estado. Revisa la conexión con el ESP32.");
+      setMensaje("No se pudo cambiar el estado. Revisa la conexión con el ESP32.");
     } finally {
       setCargando(false);
     }
@@ -56,6 +60,5 @@ const BotonEncendido = ({ dispositivo, onEstadoActualizado }) => {
     </div>
   );
 };
-
 
 export default BotonEncendido;

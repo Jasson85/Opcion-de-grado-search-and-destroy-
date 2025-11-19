@@ -10,6 +10,7 @@ const Inicio = () => {
       section.scrollIntoView({ behavior: "smooth" });
     }
   };
+  
 
   return (
     <section
